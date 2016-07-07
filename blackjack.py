@@ -162,99 +162,104 @@ class Poteza(object):
 # MAIN
 #oh! Tole bi bilo treba drugače. Narediti funkcije za posamezne akcije, potem pa v 'mainu' samo klicati akcije.
 
-paket = Deck()
-igra = 'd'
+def main():
+    paket = Deck()
+    igra = 'd'
 
-Hisa = Oseba('Hiša', 0)
-igralec1 = Oseba('Maja', 200)
+    Hisa = Oseba('Hiša', 0)
+    igralec1 = Oseba('Maja', 200)
 
-while igra == 'd':
+    while igra == 'd':
 
-    while True:
-        try:
-            znesek_stava = int(input('Postavi stavo. Na razpolago imaš %s.' %(igralec1.stanje())))
-        except:
-            print('Nekaj ne štima. Si sigurno vnesel številko? Poskusi še enkrat.')
-            continue
-        else:
-            if znesek_stava > igralec1.stanje():
-                print('Ni dovolj denarja za takšno stavo. Imaš %s. ' %(igralec1.vsota))
+        while True:
+            try:
+                znesek_stava = int(input('Postavi stavo. Na razpolago imaš %s.' %(igralec1.stanje())))
+            except:
+                print('Nekaj ne štima. Si sigurno vnesel številko? Poskusi še enkrat.')
                 continue
             else:
-                print('Stava sprejeta.')
-                igralec1.stava(znesek_stava)
-                igralec1.stanje()
-                break
+                if znesek_stava > igralec1.stanje():
+                    print('Ni dovolj denarja za takšno stavo. Imaš %s. ' %(igralec1.vsota))
+                    continue
+                else:
+                    print('Stava sprejeta.')
+                    igralec1.stava(znesek_stava)
+                    igralec1.stanje()
+                    break
 
-    igralec1.roka = Roka()
-    Hisa.roka = Roka()
+        igralec1.roka = Roka()
+        Hisa.roka = Roka()
 
 
-    #razdeli karte
-    for i in range(0,4):
-        #potegnem karto in jo dodelim igralcu ali Hisi
-        if i % 2 == 1:
-            igralec1.roka.dodaj_karto()
+        #razdeli karte
+        for i in range(0,4):
+            #potegnem karto in jo dodelim igralcu ali Hisi
+            if i % 2 == 1:
+                igralec1.roka.dodaj_karto()
+            else:
+                Hisa.roka.dodaj_karto()
+
+        #rokaIgralec1.karte_v_roki = ['As', 'K']
+        #Hisa.roka.karte_v_roki = ['As', 6]
+
+        #na vrsti so poteze
+        #Najprej preverim, če ima kdo blackJack
+        if igralec1.roka.BlackJack() == True:
+            if Hisa.roka.BlackJack() == True:
+                igralec1.izpis_nova_karta()
+                Hisa.izpis_hisa('d')
+                print('SKORAAJ!! Ampak je PUSH.')
+                igralec1.push(znesek_stava)
+            else:
+                igralec1.izpis_nova_karta()
+                Hisa.izpis_hisa('d')
+                print('IJEEE!! Black Jack. Zmagal si')
+                igralec1.zmaga(1.5, znesek_stava)
         else:
-            Hisa.roka.dodaj_karto()
-
-    #rokaIgralec1.karte_v_roki = ['As', 'K']
-    #Hisa.roka.karte_v_roki = ['As', 6]
-
-    #na vrsti so poteze
-    #Najprej preverim, če ima kdo blackJack
-    if igralec1.roka.BlackJack() == True:
-        if Hisa.roka.BlackJack() == True:
-            igralec1.izpis_nova_karta()
-            Hisa.izpis_hisa('d')
-            print('SKORAAJ!! Ampak je PUSH.')
-            igralec1.push(znesek_stava)
-        else:
-            igralec1.izpis_nova_karta()
-            Hisa.izpis_hisa('d')
-            print('IJEEE!! Black Jack. Zmagal si')
-            igralec1.zmaga(1.5, znesek_stava)
-    else:
-        igralec1.izpis_nova_karta()
-        Hisa.izpis_hisa('n')
-
-        #Za izbiro poteze bi bilo treba narediti še preverjanje pravilnosti izbrane poteze
-        while igralec1.poteza.izberi_potezo() == 'h':
-            igralec1.roka.dodaj_karto()
             igralec1.izpis_nova_karta()
             Hisa.izpis_hisa('n')
 
-            if igralec1.roka.najboljsaOpcija() == 0:
-                print('Ojoj! Pa je šlo čez! Tvoje točke: %s => BUST! KONEC IGRE' %(igralec1.roka.prestejPikeKartVRoki()))
-                igra = 'konec'
-                break
-                #konec igre
-            elif igralec1.roka.najboljsaOpcija() == 21:
-                print('Juhu 21! ... Kaj pa ima hiša? ')
-                break
+            #Za izbiro poteze bi bilo treba narediti še preverjanje pravilnosti izbrane poteze
+            while igralec1.poteza.izberi_potezo() == 'h':
+                igralec1.roka.dodaj_karto()
+                igralec1.izpis_nova_karta()
+                Hisa.izpis_hisa('n')
 
-    Hisa.izpis_hisa('d')
-
-    while Hisa.roka.najboljsaOpcija() < 17 and igra != 'konec' and Hisa.roka.najboljsaOpcija() != 0 and igralec1.roka.BlackJack() == False:
-        Hisa.roka.dodaj_karto()
+                if igralec1.roka.najboljsaOpcija() == 0:
+                    print('Ojoj! Pa je šlo čez! Tvoje točke: %s => BUST! KONEC IGRE' %(igralec1.roka.prestejPikeKartVRoki()))
+                    igra = 'konec'
+                    break
+                    #konec igre
+                elif igralec1.roka.najboljsaOpcija() == 21:
+                    print('Juhu 21! ... Kaj pa ima hiša? ')
+                    break
 
         Hisa.izpis_hisa('d')
-        print('igralec najboljsa opcija = ', igralec1.roka.najboljsaOpcija())
-        print('hisa najboljsa opcija = ', Hisa.roka.najboljsaOpcija())
 
-    if Hisa.roka.najboljsaOpcija() == 0 and igralec1.roka.najboljsaOpcija() <= 21:
-        print('Hiša bust! Bravo, zmagal si!')
-        igralec1.zmaga(2, znesek_stava)
-    elif 0 < Hisa.roka.najboljsaOpcija() <= 21 and igralec1.roka.najboljsaOpcija() <= 21:
-        if igralec1.roka.najboljsaOpcija() < Hisa.roka.najboljsaOpcija():
-            print('Ojej! Hiša zmaga. Izgubil si!')
-        elif igralec1.roka.najboljsaOpcija() == Hisa.roka.najboljsaOpcija():
-            print('SKORAAJ si zmagal!! Ampak je PUSH. Hiša in ti imata enako število pik.')
-            igralec1.push(znesek_stava)
-        elif igralec1.roka.najboljsaOpcija() > Hisa.roka.najboljsaOpcija():
-            print('BRAVO!! ZMAGA!!')
+        while Hisa.roka.najboljsaOpcija() < 17 and igra != 'konec' and Hisa.roka.najboljsaOpcija() != 0 and igralec1.roka.BlackJack() == False:
+            Hisa.roka.dodaj_karto()
+
+            Hisa.izpis_hisa('d')
+            print('igralec najboljsa opcija = ', igralec1.roka.najboljsaOpcija())
+            print('hisa najboljsa opcija = ', Hisa.roka.najboljsaOpcija())
+
+        if Hisa.roka.najboljsaOpcija() == 0 and igralec1.roka.najboljsaOpcija() <= 21:
+            print('Hiša bust! Bravo, zmagal si!')
             igralec1.zmaga(2, znesek_stava)
-        else:
-            print('Kaj se je zgodilo?') #itak se nikoli ne zgodi
+        elif 0 < Hisa.roka.najboljsaOpcija() <= 21 and igralec1.roka.najboljsaOpcija() <= 21:
+            if igralec1.roka.najboljsaOpcija() < Hisa.roka.najboljsaOpcija():
+                print('Ojej! Hiša zmaga. Izgubil si!')
+            elif igralec1.roka.najboljsaOpcija() == Hisa.roka.najboljsaOpcija():
+                print('SKORAAJ si zmagal!! Ampak je PUSH. Hiša in ti imata enako število pik.')
+                igralec1.push(znesek_stava)
+            elif igralec1.roka.najboljsaOpcija() > Hisa.roka.najboljsaOpcija():
+                print('BRAVO!! ZMAGA!!')
+                igralec1.zmaga(2, znesek_stava)
+            else:
+                print('Kaj se je zgodilo?') #itak se nikoli ne zgodi
 
-    igra = input('Želiš še eno igro?')
+        igra = input('Želiš še eno igro?')
+
+
+if __name__ == '__main__':
+    main()
