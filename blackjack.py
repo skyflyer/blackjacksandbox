@@ -57,101 +57,102 @@ class Deck(object):
         self.refill_shoe(self, self.num_decks)
 
 
-class Oseba(object):
-    def __init__(self, ime, denar = 100):
-        self.ime = ime
-        self.denar = denar
-        self.roka = Roka()
-        self.poteza = Poteza()
+class Player(object):
+    def __init__(self, name, cash = 100):
+        self.name = name
+        self.cash = cash
+        self.hand = Hand()
+        self.move = Move()
 
-    def stanje(self):
-        return self.denar
+    def balance(self):
+        return self.cash
 
-    def stava(self, stavljen_znesek):
-        self.denar -= stavljen_znesek
+    def bet(self, bet_amount):
+        self.cash -= bet_amount
 
-    # Black Jack je * 1.5, ostale zmage so *2
-    def zmaga(self, dobitek, denar_v_igri):
-        self.denar += dobitek * denar_v_igri
-        print('Priigral si: ', dobitek * denar_v_igri)
+    # winning: if Black Jack, than win is bet x 1,5, other cases x 2
+    def win(self, win_factor, bet_amount):
+        self.cash += win_factor * bet_amount
+        print('You just won: ', win_factor * bet_amount)
 
-    def push(self, denar_v_igri):
-        self.denar += denar_v_igri
+        #Hm, a res rabim parameter
+    def push(self, bet_amount):
+        self.cash += bet_amount
 
-    def izpis_nova_karta(self):
-        print('Igralec ima:  \n'
-              '  v roki: %s \n'
-              '  pike: %s \n'
-              '  najboljša opcija = %s pik' %(self.roka.karte_v_roki,
-                                              self.roka.prestejPikeKartVRoki(),
-                                              self.roka.najboljsaOpcija()))
+    def print_player_status(self):
+        print('Player status:  \n'
+              '  hand: %s \n'
+              '  points: %s \n'
+              '  best option = %s points' % (self.hand.cards_in_hand,
+                                             self.hand.count_points_in_hand(),
+                                             self.hand.best_option()))
 
-    #izpis 'hišnih' kart - dokler igralec hit-a, je karta skrita -> prikaz = 'n', ko se karta odkrije je prijaz ='d'
-    def izpis_hisa(self, prikaz):
-        if prikaz == 'n':
-            print('Hiša ima: \n'
-                  ' na mizi: %s' %(self.roka.karte_v_roki[0]))
-        elif prikaz == 'd':
-            print('Hiša ima: \n'
-                  '  na mizi: %s \n'
-                  '  pike: %s \n'
-                  '  najboljša opcija = %s pik' %(self.roka.karte_v_roki,
-                                              self.roka.prestejPikeKartVRoki(),
-                                              self.roka.najboljsaOpcija()))
+    #izpis 'hišnih' kart - dokler igralec hit-a, je karta skrita -> prikaz = 'y', ko se karta odkrije je prijaz ='n'
+    def print_house_status(self, hide):
+        if hide == 'y':
+            print('House status: \n'
+                  ' card on the table: %s' % (self.hand.cards_in_hand[0])
+        elif hide == 'n':
+            print('House status: \n'
+                  '  hand: %s \n'
+                  '  points: %s \n'
+                  '  best option = %s points' % (self.hand.cards_in_hand,
+                                                 self.hand.count_points_in_hand(),
+                                                 self.hand.best_option()))
 
 
-class Roka(object):
+class Hand(object):
     def __init__(self):
-        self.karte_v_roki = []
-        self.stava = 0
+        self.cards_in_hand = []
+        self.bet_amount = 0
         self.deck = Deck()
 
-    def dodaj_karto(self):
-        self.karte_v_roki.append(self.deck.dodeliKarto())
+    def add_a_card(self):
+        self.cards_in_hand.append(self.deck.deal_a_card())
 
-    def karte_v_roki(self):
-        return self.karte_v_roki
+    def cards_in_hand(self):
+        return self.cards_in_hand
 
-    def prestejPikeKartVRoki(self):
+    def count_points_in_hand(self):
         #možnih različnih rezultatov je število AS-ov + 1 (AS se šteje lahko kot 1 ali 11).
         #1. preštejem AS-e
         #2. preštejem pike brez AS-ov
         #3. naredim seznam z št.AS-ov + 1 elementov, vsak element ima začetno vrednost iz #2.
         #4. naredim seznam možnih rezultatov
-        pike = 0
-        n = self.karte_v_roki.count('As')
+        points = 0
+        n = self.cards_in_hand.count('As')
 
-        for karta in self.karte_v_roki:
-            if karta in ['B', 'J', 'K']:
-                pike += 10
-            elif karta == 'As':
+        for card in self.cards_in_hand:
+            if card in ['B', 'J', 'K']:
+                points += 10
+            elif card == 'As':
                 pass
             else:
-                pike += karta
+                points += card
 
         #možnih različnih rezultatov je število AS-ov + 1 (AS se šteje lahko kot 1 ali 11).
-        rezultat = [pike] * (n + 1)
+        result = [points] * (n + 1)
 
-        for i in range(len(rezultat)):
-            rezultat[i] += n + ((i) * 10)
+        for i in range(len(result)):
+            result[i] += n + ((i) * 10)
 
-        return rezultat
+        return result
 
 
-    def najboljsaOpcija(self):
+    def best_option(self):
     #najboljša opcija je tista, ki je najbližje oz. enaka vsoti 21
         best = 21
-        tocka = 0
-        for p in self.prestejPikeKartVRoki():
+        point = 0
+        for p in self.count_points_in_hand():
             if p <= 21:
                 temp = 21 - p
                 if temp < best:
                     best = temp
-                    tocka = p
-        return tocka
+                    point = p
+        return point
 
     def BlackJack(self):
-        return True if (len(self.karte_v_roki) == 2 and self.najboljsaOpcija() == 21) else False
+        return True if (len(self.cards_in_hand) == 2 and self.best_option() == 21) else False
 
 class Poteza(object):
 
