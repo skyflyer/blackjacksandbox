@@ -36,24 +36,25 @@ import random
 
 class Deck(object):
 
-    karte = [2, 3, 4, 5, 6, 7, 8, 9, 10, 'B', 'J', 'K', 'As']
-    paket = 4 * karte
+    cards = [2, 3, 4, 5, 6, 7, 8, 9, 10, 'B', 'J', 'K', 'As']
+    pack = 4 * cards
 
-    def __init__(self, st_deckov=1):
-        self.st_deckov = st_deckov
-        self.karte_v_igri = st_deckov * Deck.paket
+    def __init__(self, num_decks=1):
+        self.num_decks = num_decks
+        self.cards_in_game = num_decks * Deck.pack
 
-    def dodeliKarto(self):
-        #karte delim tako, da iz decka vlečem naključno karto
-        izbrana_karta = random.randint(0, len(self.karte_v_igri) - 1)
-        #pripravim dva podatka o karti - indeks karte v decku in vrednost karte - vračam samo karto
-        karta = [izbrana_karta, self.karte_v_igri[izbrana_karta]]
-        #iz decka izbrišem karto, ki sem jo dodelila v igro
-        del self.karte_v_igri[izbrana_karta]
-        return karta[1]
+    def deal_a_card(self):
 
-    def ponovnoNapolniDeck(self):
-        self.postaviDeck(self, self.st_deckov)
+		# dealing = choosing random card form a cards in game
+        chosen_card = random.randint(0, len(self.cards_in_game) - 1)
+		# info about the card - index and suit
+        card = [chosen_card, self.cards_in_game[chosen_card]]
+        # remove a chosen card from the deck
+        del self.cards_in_game[chosen_card]
+        return card[1]
+
+    def reload_shoe(self):
+        self.refill_shoe(self, self.num_decks)
 
 
 class Oseba(object):
@@ -69,7 +70,7 @@ class Oseba(object):
     def stava(self, stavljen_znesek):
         self.denar -= stavljen_znesek
 
-    #Black Jack je * 1.5, ostale zmage so *2
+    # Black Jack je * 1.5, ostale zmage so *2
     def zmaga(self, dobitek, denar_v_igri):
         self.denar += dobitek * denar_v_igri
         print('Priigral si: ', dobitek * denar_v_igri)
