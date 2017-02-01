@@ -4,9 +4,8 @@ class Hand(object):
     
     def __init__(self):
         self.cards = []
-#To je stvar igre   
-#self.bet_amount = input('Place your bet: ')
-        print('Narjen')
+        self.bet_amount = 0
+        print('Hand narjen')
         
     def add_card(self, card):
         self.cards.append(card)
@@ -20,14 +19,27 @@ class Player(object):
         self.hands = []
         self.hands.append(Hand())
         self.h = 0
+        print('klas Player: h = %s, player = %s' %(self.h, self.name))
     
-    def split_hand(self):
+    def split_hand(self, hand_idx):
+
         self.hands.append(Hand())    
         self.h += 1
-        split_card = self.hands[(self.h)-1].cards.pop()
+        split_card = self.hands[hand_idx].cards.pop()
         self.hands[self.h].cards.append(split_card)
-        
-        #Pazi BET!
+        self.hands[self.h].bet_amount = self.hands[0].bet_amount
+
+        print('metoda player.split_hand h = %s' %self.h)
+
+    def try_bet(self, bet):
+        if self.cash - bet < 0:
+            print('You don\'t have enough money for that. You have %s available'  %self.cash)
+            return False
+        else:
+            self.cash -= bet
+            return True
+
+
         
 class Classic_cards(object):
 
@@ -87,7 +99,6 @@ class Game(object):
         #Append player 'HOUSE'
         self.players.append(Player('P', 'Maja', 200))
         self.players.append(Player('P', 'Aleš', 200))        
-        self.players.append(Player('H', 'HOUSE', 0))
         
         self.deck = Deck(packs, Classic_cards())
 
@@ -96,6 +107,11 @@ class Game(object):
         print('Let\'s play BLACKJACK! \n')
         print('Shuffeling')
         self.deck.shuffle()
+
+        self.bets(0)
+
+        self.players.append(Player('H', 'HOUSE', 0))
+
         for i in range(len(self.players) * 2): 
             self.players[(i) % len(self.players)].hands[0].add_card(self.deck.deal_a_card())
             
@@ -112,37 +128,55 @@ class Game(object):
             if player.player_type == 'P':
                 print('%s, you have %s in hand. \n' %(player.name, player.hands[0].cards))
                 self.choose_move(player, 0)
-            
-    def choose_move(self, player, hand):
 
+    def bets(self, hand_idx):
+        print('Players, place your bets: \n')
 
+        for player in self.players: 
+            a = int(input('%s, place your bet: ' %player.name))
+            while player.try_bet(a) is False:
+                a = int(input('Try again. Lower thy bet!'))
             
-        move = input('%s, what is your move?: (H - hit, S - stand, P - split, D - doubledown)' %player.name)
+            player.hands[hand_idx].bet_amount = a
+            player.cash -= a
+
+    def choose_move(self, player, hand_idx):
+        
+        # try to list only available moves 
+                    
         if move == 'H':
-            self.hit(player, hand)
+            self.hit(player, hand_idx)
         elif move == 'S':
             self.stand()
         elif move == 'P':
-            player.split_hand()
-            self.split(player)
+            player.split_hand(hand_idx)
+            #print('h =', a)
+            self.split(player, hand_idx)
         elif move == 'DD':
             self.doubledown()
 
-    def hit(self, player, hand):
-        print(len(player.hands))
-        player.hands[hand].add_card(self.deck.deal_a_card())
-        print(player.hands[hand].cards)
-        
-        self.choose_move(player, hand)
-        
-    def split(self, player):
-        h = 0
-        print('Smo v splitu, h = ', h)
+        move = input('%s, what is your move?: (H - hit, S - stand, P - split, D - doubledown)' %player.name)
 
-        for hand in player.hands:
-            print('%s, you have %s in hand. h = %s' %(player.name, hand.cards, h))
-            self.choose_move(player, h)
-            h += 1
+    def hit(self, player, hand_idx):
+        print('metoda hit: Player %s ima %s handov. Tole je %s -i hand' %(player.name, len(player.hands), hand_idx))
+        player.hands[hand_idx].add_card(self.deck.deal_a_card())
+        print(player.hands[hand_idx].cards)
+        
+        self.choose_move(player, hand_idx)
+        
+    def split(self, player, hand_idx):
+
+        # add conditions when split is possible:
+        # only two cards
+        # same value
+        # enough money
+        print('Smo v splitu, hand_idx = ', hand_idx)
+
+        for number, hand in enumerate(player.hands):
+            if number >= hand_idx:
+                print('metoda split: num = %s, cards = %s' %(number,hand.cards))
+                print('metoda split: %s, you have %s in hand. h = %s, bet = %s' %(player.name, hand.cards, number, player.hands[hand_idx].bet_amount))
+                self.choose_move(player, number)
         
     def stand(self):
         pass
