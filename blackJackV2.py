@@ -141,9 +141,24 @@ class Game(object):
             player.cash -= a
 
     def choose_move(self, player, hand_idx):
+
+        available_moves = ['H - hit \n', 'S - stand \n']
         
         # try to list only available moves 
-                    
+        if len(player.hands[hand_idx].cards) == 2 and \
+            player.hands[hand_idx].cards[0][0] == player.hands[hand_idx].cards[1][0] and \
+            player.cash - player.hands[hand_idx].bet_amount > 0:
+            available_moves.append('P - split \n')
+
+        if player.cash > 0:
+            available_moves.append('D - double down \n')
+
+        print('%s, your available moves are: \n' %player.name)
+        for m in available_moves: 
+            print(m)
+
+        move = input('%s, what is your move?:' %(player.name))
+
         if move == 'H':
             self.hit(player, hand_idx)
         elif move == 'S':
@@ -155,8 +170,7 @@ class Game(object):
         elif move == 'DD':
             self.doubledown()
 
-        move = input('%s, what is your move?: (H - hit, S - stand, P - split, D - doubledown)' %player.name)
-
+        
     def hit(self, player, hand_idx):
         print('metoda hit: Player %s ima %s handov. Tole je %s -i hand' %(player.name, len(player.hands), hand_idx))
         player.hands[hand_idx].add_card(self.deck.deal_a_card())
