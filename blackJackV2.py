@@ -1,26 +1,25 @@
 import random
 
 class Hand(object):
-    # hand is in game until in_game equals 1
     
     def __init__(self):
         self.cards = []
         self.bet_amount = 0
-        self.in_game = 1
+        self.in_game = True
         self.isBlackJack = False
-        print('Hand narjen')
+        self.is_double_down = False
         
     def add_card(self, card):
+        # add card to a hand
         self.cards.append(card)
-        print('Dodali karto')
-        print('You have: %s' %self.count_points_in_hand())
 
     def count_points_in_hand(self):
-        # možnih različnih rezultatov je število AS-ov + 1 (AS se šteje lahko kot 1 ali 11).
-        # 1. preštejem AS-e
-        # 2. preštejem pike brez AS-ov
-        # 3. naredim seznam z št.AS-ov + 1 elementov, vsak element ima začetno vrednost iz #2.
-        # 4. naredim seznam možnih rezultatov
+        # there are more possible outcomes - it depends on how many Aces are in hand
+        # 1. count number of aces
+        # 2. count points without aces
+        # 3. make a list with number of items that equals number of aces. Each item equals
+        #    points of a hand without aces
+        # 4. make a list with possible outcomes ()
         points = 0
 
         # count the number od Aces in one's hand
@@ -35,7 +34,7 @@ class Hand(object):
             else:
                 points += int(card[0])
 
-        # možnih različnih rezultatov je število AS-ov + 1 (AS se šteje lahko kot 1 ali 11).
+        # number of possible outcomes = number of aces + 1 (value of ace is eathen 1 or 11).
         result = [points] * (n + 1)
 
         for i in range(len(result)):
@@ -46,23 +45,19 @@ class Hand(object):
 class Player(object):
 
     def __init__(self, player_type, name, cash = 10):
+        #player 
         self.player_type = player_type
         self.name = name
         self.cash = cash
         self.hands = []
         self.hands.append(Hand())
-        self.h = 0
-        print('klas Player: h = %s, player = %s' %(self.h, self.name))
     
     def split_hand(self, hand_idx):
-
+        # if player goes for a split, 
         self.hands.append(Hand())    
-        self.h += 1
         split_card = self.hands[hand_idx].cards.pop()
         self.hands[self.h].cards.append(split_card)
         self.hands[self.h].bet_amount = self.hands[0].bet_amount
-
-        print('metoda player.split_hand h = %s' %self.h)
 
     def try_bet(self, bet):
         if self.cash - bet < 0:
@@ -75,8 +70,10 @@ class Player(object):
     def gain_loose(self, bet, factor):
         self.cash += bet * factor
 
+    def restart_game(self):
+        self.hands = []
+        self.hands.append(Hand())
 
-        
 class Classic_cards(object):
 
     def __init__(self):
@@ -100,57 +97,152 @@ class Deck(object):
         self.num_of_packs = num_of_packs
         self.deck = self.num_of_packs * cards.pack
         self.card = Classic_cards()
-
-    def print_cards(self):
-        print(self.deck)
+        self.number_of_cards = len(self.deck)
 
     def shuffle(self):
         random.shuffle(self.deck)
 
-    def num_of_cards(self):
-        print(len(self.deck))
+    def deal_a_card(self, turn, player):
+        # turn:
+        # 0 for initial deal
+        # 1 for deals in game
+        # Player:
+        # P - player
+        # H - house
+        a = self.deck.pop(0)
+        self.number_of_cards -= 1
+        if turn > 0:
+            if player == 'P':
+                p = 'Your card: '
+            else:
+                p = 'House gets: '
+            print('%s %s\n' % (p, a))
+        
+        return a  
 
-    def deal_a_card(self):
-        return self.deck.pop(0)
+    def insert_a_card(self, card):
+        self.deck.append(card)
 
 class Game(object):
 
     def __init__(self):
         
-        '''
-        self.num_of_players = int(input('how many players are there eager to play: ?\n'))
+        print('Welcome to the game of BLACKJACK!\n')
+        self.num_of_players = int(input('How many players are there eager to play: ?\n'))
         packs = int(input('How many packs of cards do you want to use?: \n'))
-        '''
+        
         self.players = []
-        
+        self.aim_of_the_game = 21
+        self.mode_of_the_game = True
+
+        '''
         self.num_of_players = 2
-        packs = 2
+        packs = 1
         
         '''
-        for i in range(num_of_players):
-            name = input('What is your name, player%s?\n' %(i+1)) #what if blank?
-            cash = input('With how much money do you want to play?') #what if blank
+        for i in range(self.num_of_players):
+
+            name = input('What is your name, player%s?\n' % (i + 1)) 
+            while len(name) < 1:
+                name = ('For name, please input something at least 1 char long:\n')
+            
+            while True:
+                try:
+                    cash = int(input('With how much money do you want to play?'))
+                except:
+                    print('There is something wrong. Are you sure you inserted a number? Try again:')
+                    continue
+                else:
+                    if cash <= 0:
+                        print('That\'s not valid amount. It has to be greater than 0.')
+                        continue
+                    else:
+                        break
+
             self.players.append(Player('P', name, cash))
-        '''   
-        #Append player 'HOUSE'
-        self.players.append(Player('P', 'Maja', 200))
-        self.players.append(Player('P', 'Aleš', 200))        
+          
+        # Append player 'HOUSE'
+        self.players.append(Player('H', 'HOUSE', 0))  
+
+        print('Število igralcev: %s' %(len(self.players)))     
         
+        '''
+        self.players.append(Player('P', 'Maja', 200))
+        self.players.append(Player('P', 'Aleš', 200))
+        '''
+
         self.deck = Deck(packs, Classic_cards())
+
+    def game_on(self):
+
+         # reshuflle trigger
+
+        print('Let\'s play BLACKJACK! \n')
+        print('Shuffleing\n')
+        self.deck.shuffle()
+
+        trigger = (self.num_of_players + 1) * 5
+
+        while self.mode_of_the_game == True: 
+            if self.deck.number_of_cards < trigger:
+                print('Time to reshuffle!\n')
+                self.deck.number_of_cards = len(self.deck.deck)
+                self.deck.shuffle()
+
+            self.bets(0)
+
+            self.initial_deal()
+
+            self.first_show_of_cards()
+
+            self.players_turn()
+
+            self.house_turn()
+
+            self.refill_shoe()
+
+            self.is_player_in_game()
+
+            print('\nGAME OVER!\n')
+
+            if len(self.players) > 1:
+                a = input('Do you want another go? (Y - yes, N - no) \n').upper()
+                if a not in ['Y', 'N']:
+                    input('That is not a valid input. Please choose Y for yes or N for no. \n')
+                elif a == 'Y':
+                    self.mode_of_the_game = True
+                    for player in self.players:
+                        player.restart_game()
+                else:
+                    self.mode_of_the_game = False
+            else:
+                self.mode_of_the_game = False
 
 
     def initial_deal(self):
-        print('Let\'s play BLACKJACK! \n')
-        print('Shuffeling')
-        self.deck.shuffle()
 
-        self.bets(0)
-
-        self.players.append(Player('H', 'HOUSE', 0))
+        # first deal of cards to all players
 
         for i in range(len(self.players) * 2): 
-            self.players[(i) % len(self.players)].hands[0].add_card(self.deck.deal_a_card())
+            print('%s-ta karta' % i)
+            self.players[(i) % len(self.players)].hands[0].add_card(self.deck.deal_a_card(0, ''))
+
             
+    def players_turn(self):
+
+        for player in self.players:
+            self.blackJack(player, 0)
+            self.check_players_hand_still_in_game(player, 0)
+            # Time for players to make their decisions
+            if player.player_type == 'P' and player.hands[0].in_game == False:
+                print('%s, your turn: \n' % player.name)
+                self.show_of_cards_points(player, 0)
+                self.choose_move(player, 0)
+                print('################################################\n')
+    
+    def first_show_of_cards(self):
+
+        print('################################################\n')
         for player in self.players:
             # for players we show all cards, for house only one
             if player.player_type == 'P':
@@ -158,32 +250,21 @@ class Game(object):
             else:
                 crds = player.hands[0].cards[1]
             print('Player %s has %s in hand \n' %(player.name, crds))
-        # Check for BlackJack   
-
-        for player in self.players:
-            # Time for players to make their decisions
-            if player.player_type == 'P':
-                print('%s (%s), you have %s in hand. \n' %(player.name, player.player_type, player.hands[0].cards))
-                self.choose_move(player, 0)
-
-        self.house_turn()
+        print('################################################\n')
 
     def house_turn(self):
         # house shows hidden card and hits till 17
-        print('House has %s in hand.' %self.players[self.num_of_players].hands[0].cards)
+        print('HOUSE\'S TURN\n')
+        print(self.players[self.num_of_players].name)
+        self.show_of_cards_points(self.players[self.num_of_players], 0)
         # check if is BlackJack
         self.blackJack(self.players[self.num_of_players], 0)
-        house_BlackJack = self.players[self.num_of_players].hands[0].isBlackJack
-        print('House BJ = ', house_BlackJack)
-        print('Is house: ', self.players[self.num_of_players].name )
-        if house_BlackJack is False:
+        
+        if self.players[self.num_of_players].hands[0].isBlackJack is False:
             a = self.best_option(self.players[self.num_of_players], 0)
-            print('House best option = ' , a)
             while a < 17 and a > 0:
                 self.hit(self.players[self.num_of_players], 0)
                 a = self.best_option(self.players[self.num_of_players], 0)
-                print('While a = ', a)
-            print('House turn: ', self.players[self.num_of_players].hands[0].cards)
 
         self.who_wins()
 
@@ -191,34 +272,51 @@ class Game(object):
         print('Players, place your bets: \n')
 
         for player in self.players: 
-            a = int(input('%s, place your bet. You have %s available: ' % (player.name, player.cash)))
-            while player.try_bet(a) is False:
-                a = int(input('Try again. Lower thy bet!'))
-            
+            if player.player_type == 'P':
+                while True:
+                    try:
+                        a = int(input('%s, place your bet. You have %s available: \n' % (player.name, player.cash)))
+                    except:
+                        print('There is something wrong. Are you sure you inserted a number? Try again:')
+                        continue
+                    else:
+                        if player.try_bet(a) is False:
+                            continue
+                        else:
+                            break
+                
             player.hands[hand_idx].bet_amount = a
 
     def choose_move(self, player, hand_idx):
 
-        if len(player.hands[hand_idx].cards) == 2 and self.blackJack(player, hand_idx) == True:
+        if len(player.hands[hand_idx].cards) == 2 and player.hands[hand_idx].isBlackJack == True:
             pass
         else: 
             available_moves = ['H - hit \n', 'S - stand \n']
+            am = ['H', 'S']
             
             # try to list only available moves 
             if len(player.hands[hand_idx].cards) == 2 and \
-                player.hands[hand_idx].cards[0][0] == player.hands[hand_idx].cards[1][0] and \
                 player.cash - player.hands[hand_idx].bet_amount > 0:
-                available_moves.append('P - split \n')
-
-            if player.cash > 0:
                 available_moves.append('D - double down \n')
+                am.append('D')
+                # condition for split
+                if player.hands[hand_idx].cards[0][0] == player.hands[hand_idx].cards[1][0]:
+                    available_moves.append('P - split \n')
+                    am.append('P')
+                
 
-            print('%s, you have %s points. Your best option is %s. Your available moves are: \n' \
-                %(player.name, player.hands[hand_idx].count_points_in_hand(), self.best_option(player, hand_idx)))
+            print('Your available moves are: \n')
             for m in available_moves: 
                 print(m)
 
-            move = input('%s, what is your move?:' %(player.name))
+            move = input('%s, what is your move?:' %(player.name)).upper()
+
+            while move not in am:
+                print('This is not a valid move. Please choose one of the available moves: \n')
+                for m in available_moves: 
+                    print(m)
+                move = input()
 
             if move == 'H':
                 self.hit(player, hand_idx)
@@ -228,89 +326,142 @@ class Game(object):
                 player.split_hand(hand_idx)
                 #print('h =', a)
                 self.split(player, hand_idx)
-            elif move == 'DD':
-                self.doubledown()
+            elif move == 'D':
+                self.doubledown(player, hand_idx)
         
     def hit(self, player, hand_idx):
-        print('metoda hit: Player %s ima %s handov. Tole je %s -i hand' %(player.name, len(player.hands), hand_idx))
-        player.hands[hand_idx].add_card(self.deck.deal_a_card())
-        print(player.hands[hand_idx].cards)
 
-        # after every hit, check if player is still below 21
-        if player.player_type == 'P':
-            if self.check_player_still_in_game(self.best_option(player, hand_idx))  != -1:
+        player.hands[hand_idx].add_card(self.deck.deal_a_card(1, player.player_type))
+
+        self.show_of_cards_points(player, hand_idx)
+
+        self.check_players_hand_still_in_game(player, hand_idx)
+        
+        if player.player_type == 'P' and player.hands[hand_idx].in_game is True:
                 self.choose_move(player, hand_idx)
-            else:
-                print('Too bad. You busted. You have %s left' %player.cash)
-                player.hands[hand_idx].in_game = 0
+            
         
     def split(self, player, hand_idx):
 
-        # add conditions when split is possible:
-        # only two cards
-        # same value
-        # enough money
-        print('Smo v splitu, hand_idx = ', hand_idx)
-
         for number, hand in enumerate(player.hands):
             if number >= hand_idx:
-                print('metoda split: num = %s, cards = %s' %(number,hand.cards))
-                print('metoda split: %s, you have %s in hand. h = %s, bet = %s' %(player.name, hand.cards, number, player.hands[hand_idx].bet_amount))
+                card = player.hands[hand_idx].add_card(self.deck.deal_a_card(1, player.player_type))
+                self.show_of_cards_points(player, hand_idx)
                 self.choose_move(player, number)
         
     def stand(self):
         pass
 
+    def doubledown(self, player, hand_idx):
+        # checking if there is enough money - took care of in choose_move
+        player.try_bet(player.hands[hand_idx].bet_amount)
+        player.hands[hand_idx].bet_amount += player.hands[hand_idx].bet_amount
+        player.hands[hand_idx].add_card(self.deck.deal_a_card(1, player.player_type))
+        player.hands[hand_idx].in_game = False
+        self.show_of_cards_points(player, hand_idx)
+        
     def best_option(self, player, hand_idx):
-        # najboljša opcija je tista, ki je najbližje oz. enaka vsoti 21
-        best = 21
-        point = 0
-        for p in player.hands[hand_idx].count_points_in_hand():
-            if p <= 21:
-                temp = 21 - p
-                if temp < best:
-                    best = temp
-                    point = p
-        return point
+        # najboljša opcija je tista, ki je najbližje oz. enaka vsoti 21 (oziroma ciljni vsoti)
+        aim = self.aim_of_the_game
+        best = 0
 
-    def check_player_still_in_game(self, point):
-        if point == 0:
-            print('BUST')
-            return -1
+        l = player.hands[hand_idx].count_points_in_hand()
 
+        if l.count(aim) > 0:
+            return aim
+        else:
+            for p in l:
+                if p < aim and p > best:
+                    best = p
+            return best
+
+    def show_of_cards_points(self, player, hand_idx):
+        
+        if player.player_type == 'P':
+            title = 'You have'
+            possessive = 'Your '
+            score_begining = 's'
+        else:
+            title = 'House has'
+            possessive = ''
+            score_begining = 'S'
+
+        print('%s %s in hand.' % (title, player.hands[hand_idx].cards))
+        print('%s%score is %s, best option is %s \n' \
+            % (possessive, score_begining, 
+                player.hands[hand_idx].count_points_in_hand(), 
+                self.best_option(player,hand_idx)))
+
+    def check_players_hand_still_in_game(self, player, hand_idx):
+        # if player exceedes aim of the game, or reaches it, there are no more moves for him/her
+
+        a = self.best_option(player, hand_idx)
+        if a == 0:
+            print('It\'s a bust. Game over.')
+            player.hands[hand_idx].in_game = False
+        elif  a == self.aim_of_the_game:
+            print('You reached %s!' % self.aim_of_the_game)
+            player.hands[hand_idx].in_game = False
 
     def blackJack(self, player, hand_idx):
-        if self.best_option(player, hand_idx) == 21:
+        if self.best_option(player, hand_idx) == self.aim_of_the_game:
+            print('WOOP WOOP, %s got BLACK JACK! \n' % player.name)
             player.hands[hand_idx].isBlackJack = True
+            player.hands[hand_idx].in_game = False
 
 
     def who_wins(self):
-        # if house busts, everybody still in game wins
-        house_points = self.best_option(self.players[self.num_of_players], 0) 
-        print('Who wins - house points: ', self.best_option(self.players[self.num_of_players], 0) )
-        if house_points > 21:
-            house_points = 0
+        print('################################################\n')
+        print('WHO WON and WHO LOST \n')
+        print('################################################\n')
+        # 
+
+        house_points = self.best_option(self.players[self.num_of_players], 0)
 
         for player in self.players:
             if player.player_type == 'P':
                 for i, hand in enumerate(player.hands):
                     player_hand_points = self.best_option(player, i) 
-                    print(player.name)
-                    if player.hands[i].in_game == 1:
-                        if player_hand_points > house_points:
-                            player.gain_loose(player.hands[i].bet_amount, 2)
-                            print('Great, you won %s. Now you have %s' % (player.hands[i].bet_amount * 2, player.cash))
-                        elif player_hand_points == house_points: #PUSH
-                            player.gain_loose(player.hands[i].bet_amount, 1)
-                            print('It\'s a Push! You didn\'t loose any money! You have ', player.cash)
-                        elif player.hands[i].isBlackJack == True and player[self.num_of_players - 1].hands[0].isBlackJack == False:
-                            print('He hej! You\'ve got BlackJack! you won %s. Now you have %s' % (player.hands[i].bet_amount * 2.5, player.cash))
-                            player.gain_loose(player.hands[i].bet_amount, 2.5)
-                        elif player_hand_points < house_points:
-                            print('Too bad! You lost. Now you have %s' % (player.cash))
-                    else:
-                        print('Sorry, you lost! Now you have %s' % (player.cash))
-# BLACKJACK
+                    print('-------------------------------------------\n')
+                    print(player.name.upper())
+                    print('House has %s, you have %s \n' % (house_points, player_hand_points))
 
-g = Game()
-g.initial_deal()
+                    if player_hand_points > house_points:
+                        player.gain_loose(player.hands[i].bet_amount, 2)
+                        print('Great, you won %s. Now you have %s' % (player.hands[i].bet_amount * 2, player.cash))
+                        # House cash:
+                        self.players[self.num_of_players].gain_loose(player.hands[i].bet_amount, -1)
+                    elif (player_hand_points == house_points and house_points != 0 and player.hands[i].isBlackJack is False) or \
+                        player.hands[i].isBlackJack is True and self.players[self.num_of_players].isBlackJack is True: #PUSH
+                        player.gain_loose(player.hands[i].bet_amount, 1)
+                        print('It\'s a Push! You didn\'t loose any money! You have ', player.cash)
+                    elif player.hands[i].isBlackJack == True and player[self.num_of_players].hands[0].isBlackJack == False:
+                        print('He hej! You\'ve got BlackJack! you won %s. Now you have %s' % (player.hands[i].bet_amount * 2.5, player.cash))
+                        player.gain_loose(player.hands[i].bet_amount, 2.5)
+                        self.players[self.num_of_players].gain_loose(player.hands[i].bet_amount, -1.5)
+                    elif (player_hand_points < house_points) or (player_hand_points == 0 and house_points == 0):
+                        print('Too bad! You lost. Now you have %s' % (player.cash))
+                        self.players[self.num_of_players].gain_loose(player.hands[i].bet_amount, 1)
+                    elif player_hand_points > self.aim_of_the_game:
+                        print('Sorry, you lost! Now you have %s' % (player.cash))
+                        self.players[self.num_of_players].gain_loose(player.hands[i].bet_amount, 1)
+
+        print('\nHouse has: ', self.players[self.num_of_players].cash)
+
+
+    def refill_shoe(self):
+        for player in self.players:
+            for i, hand in enumerate(player.hands):
+                for card in player.hands[i].cards:
+                    self.deck.insert_a_card(card)
+
+    def is_player_in_game(self):
+        for i, player in enumerate(self.players):
+            if player.cash == 0 and player.player_type == 'P':
+                print('Sorry, %s, you lost all your money. You can\'t play anymore.' % player.name)
+                self.players.pop(i)
+                self.num_of_players = len(self.players) - 1
+
+
+
+g = Game().game_on()
