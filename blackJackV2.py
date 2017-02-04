@@ -234,7 +234,7 @@ class Game(object):
             self.blackJack(player, 0)
             self.check_players_hand_still_in_game(player, 0)
             # Time for players to make their decisions
-            if player.player_type == 'P' and player.hands[0].in_game == False:
+            if player.player_type == 'P' and player.hands[0].in_game == True:
                 print('%s, your turn: \n' % player.name)
                 self.show_of_cards_points(player, 0)
                 self.choose_move(player, 0)
