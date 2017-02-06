@@ -1,6 +1,31 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import random
 
+'''
+Blackjack is a comparing card game between a player and dealer (House), meaning players compete 
+against the dealer but not against other players. It is played with one or more decks of 52 cards. 
+The objective of the game is to beat the dealer in one of the following ways:
+ - Get 21 points on the player's first two cards (called a "blackjack" or "natural"), 
+   without a dealer blackjack;
+ - Reach a final score higher than the dealer without exceeding 21; 
+ - Let the dealer draw additional cards until his or her hand exceeds 21.
+
+The player or players are dealt a two-card hand and add together the value of their cards. 
+Face cards (kings, queens, and jacks) are counted as ten points. A player and the dealer 
+can count an ace as 1 point or 11 points. All other cards are counted as the numeric value 
+shown on the card. After receiving their first two cards, players have the option of 
+getting another card (Hit), not choosing another card (Stand), doubleing down (increasing initial bet),
+of if conditions aplly - splitting (getting another hand). In a given round, the player or the 
+dealer wins by having a score of 21 or by having the higher score that is less than 21. 
+Scoring higher than 21 (called "busting" or "going bust") results in a loss. A player may win 
+by having any final score equal to or less than 21 if the dealer busts.
+'''
+
 class Hand(object):
+    # each player can have one or more hands. This class handels ONE hand
+    # player is in game until he/she busts, reaches aim of the game, stands, double downs (and gets one card)
     
     def __init__(self):
         self.cards = []
@@ -11,6 +36,7 @@ class Hand(object):
         
     def add_card(self, card):
         # add card to a hand
+
         self.cards.append(card)
 
     def count_points_in_hand(self):
@@ -34,7 +60,7 @@ class Hand(object):
             else:
                 points += int(card[0])
 
-        # number of possible outcomes = number of aces + 1 (value of ace is eathen 1 or 11).
+        # number of possible outcomes = number of aces + 1 (value of ace is eather 1 or 11).
         result = [points] * (n + 1)
 
         for i in range(len(result)):
@@ -43,9 +69,11 @@ class Hand(object):
         return result
 
 class Player(object):
+    # player  has a name, type (P - player, H - house) and a money (cash)
+    # player can have one or more hands (if he/she splits a hand can have more hands)    
+    #  
 
-    def __init__(self, player_type, name, cash = 10):
-        #player 
+    def __init__(self, player_type, name, cash):
         self.player_type = player_type
         self.name = name
         self.cash = cash
@@ -53,13 +81,18 @@ class Player(object):
         self.hands.append(Hand())
     
     def split_hand(self, hand_idx):
-        # if player goes for a split, 
+        # if player goes for a split, another hand appends to the list of hands
+        # last card of a split hand goes into newly created hand
+        # newly created hand gets a bet that is equal to te bet of a split hand 
+
         self.hands.append(Hand())    
         split_card = self.hands[hand_idx].cards.pop()
         self.hands[self.h].cards.append(split_card)
         self.hands[self.h].bet_amount = self.hands[0].bet_amount
 
     def try_bet(self, bet):
+        # method for testing if player has enough money to place a bet
+
         if self.cash - bet < 0:
             print('You don\'t have enough money for that. You have %s available'  %self.cash)
             return False
@@ -68,29 +101,28 @@ class Player(object):
             return True
 
     def gain_loose(self, bet, factor):
+        # method for handeling winning and loosing. If player/house wins some money, the 
+        # formula goes: bet times factor. Factor is positive in case of a win, or -1 in case
+        # of loosing
+
         self.cash += bet * factor
 
     def restart_game(self):
+        # method for restarting a game. Player has to have an empty hand
+
         self.hands = []
         self.hands.append(Hand())
 
 class Classic_cards(object):
+    # creating a classic pack of cards
 
     def __init__(self):
         ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'K', 'Q']
         suits = ['CLUB', 'DIAMOND', 'HEART', 'SPADE']
         self.pack = [[rank, suit] for rank in ranks for suit in suits]
 
-    def package(self):
-        print(self.pack)
-
-    def print_card(self, card):
-        print(card)
-
-    def get_card(self, i):
-        print(self.pack(i))
-        
 class Deck(object):
+    # deck is a one or more packs of cards
 
     def __init__(self, num_of_packs, cards):
         self.cards = cards
@@ -100,15 +132,25 @@ class Deck(object):
         self.number_of_cards = len(self.deck)
 
     def shuffle(self):
+        # method for shuffeling cards
         random.shuffle(self.deck)
 
     def deal_a_card(self, turn, player):
+        # method for dealing cards
+        # On initial deal we don't show each individual card that gets delt, we show both cards
+        # of a player
+        # When player/house hits, or doubles down, wh show what card was given. Output is costumised
+        # for player and for house (that's whay the parameter 'player')
         # turn:
         # 0 for initial deal
         # 1 for deals in game
         # Player:
         # P - player
         # H - house
+
+        # method returns a dealt card
+        # it also couts how many cards were dealt (for reshufleing purposes)
+
         a = self.deck.pop(0)
         self.number_of_cards -= 1
         if turn > 0:
@@ -118,12 +160,24 @@ class Deck(object):
                 p = 'House gets: '
             print('%s %s\n' % (p, a))
         
-        return a  
+        return a
 
     def insert_a_card(self, card):
+        # after each ended game, we return cards back to a shoe
+
         self.deck.append(card)
 
 class Game(object):
+    # Game class controls the flow of the game
+    # initially gets data about number of players (name, cash), number of packs of cards to 
+    # fill in a shoe.
+    # Name of a player must be at least one char long (whitespace is ok, all players can have same name
+    # in propper game one shoud take care of this).
+    # Player can play with 1 unit of money minimum.
+    # Aim of the game can be set (aim_of_the_game). It's set to 21
+    # players are listed in a list od players. House is the last player of a list
+    # dack gets initialised
+
 
     def __init__(self):
         
@@ -135,11 +189,6 @@ class Game(object):
         self.aim_of_the_game = 21
         self.mode_of_the_game = True
 
-        '''
-        self.num_of_players = 2
-        packs = 1
-        
-        '''
         for i in range(self.num_of_players):
 
             name = input('What is your name, player%s?\n' % (i + 1)) 
@@ -164,23 +213,23 @@ class Game(object):
         # Append player 'HOUSE'
         self.players.append(Player('H', 'HOUSE', 0))  
 
-        print('Število igralcev: %s' %(len(self.players)))     
-        
-        '''
-        self.players.append(Player('P', 'Maja', 200))
-        self.players.append(Player('P', 'Aleš', 200))
-        '''
-
         self.deck = Deck(packs, Classic_cards())
 
     def game_on(self):
-
-         # reshuflle trigger
+    # method for flow of the game
+    # it has reshuflle triger. Shoe gets reshuffled when there was certain amount of 
+    # cards dealt (in deck must be at least enough cards that each player can draw 5 cards)
+    # After first shuffle, game gets in continious loop. Game goes on until game is over 
+    # and is eather chosen that players don't want to play any more or all players lost 
+    # all their money
+    # after an initial deal, bets are set, players make their moves, house hits until at least 17
+    # shoe gets refilled and player status is checked (if there is enough money to continue)
 
         print('Let\'s play BLACKJACK! \n')
         print('Shuffleing\n')
         self.deck.shuffle()
 
+        # reshuflle trigger
         trigger = (self.num_of_players + 1) * 5
 
         while self.mode_of_the_game == True: 
@@ -220,7 +269,6 @@ class Game(object):
 
 
     def initial_deal(self):
-
         # first deal of cards to all players
 
         for i in range(len(self.players) * 2): 
@@ -229,11 +277,13 @@ class Game(object):
 
             
     def players_turn(self):
+     # Time for players to make their decisions
+     # first check: did any of players get BlackJack
+     # if not, player decides on their move
 
         for player in self.players:
             self.blackJack(player, 0)
             self.check_players_hand_still_in_game(player, 0)
-            # Time for players to make their decisions
             if player.player_type == 'P' and player.hands[0].in_game == True:
                 print('%s, your turn: \n' % player.name)
                 self.show_of_cards_points(player, 0)
@@ -241,10 +291,10 @@ class Game(object):
                 print('################################################\n')
     
     def first_show_of_cards(self):
+        # for players we show all cards, for house only one    
 
         print('################################################\n')
         for player in self.players:
-            # for players we show all cards, for house only one
             if player.player_type == 'P':
                 crds = player.hands[0].cards
             else:
@@ -253,9 +303,11 @@ class Game(object):
         print('################################################\n')
 
     def house_turn(self):
-        # house shows hidden card and hits till 17
+        # house shows hidden card, check if it has Black Jack on first two cards. 
+        # if not, hits till 17
+
         print('HOUSE\'S TURN\n')
-        print(self.players[self.num_of_players].name)
+
         self.show_of_cards_points(self.players[self.num_of_players], 0)
         # check if is BlackJack
         self.blackJack(self.players[self.num_of_players], 0)
@@ -269,6 +321,8 @@ class Game(object):
         self.who_wins()
 
     def bets(self, hand_idx):
+        # method for handeling initial bets
+
         print('Players, place your bets: \n')
 
         for player in self.players: 
@@ -288,6 +342,14 @@ class Game(object):
             player.hands[hand_idx].bet_amount = a
 
     def choose_move(self, player, hand_idx):
+        # method for handeling available moves of a player
+        # player can always hit or stand, until he/she busts, or gets Black Jack
+        # in first two dealt cards. If he/she chooses doubledown one hit is taken care of
+        # (player does not need to hit)
+        # player can split if he/she holds only two cards in hand and they are of the same value
+
+        # each time, only available moves gets printed out and only available moves are alowed to
+        # enter
 
         if len(player.hands[hand_idx].cards) == 2 and player.hands[hand_idx].isBlackJack == True:
             pass
@@ -330,6 +392,10 @@ class Game(object):
                 self.doubledown(player, hand_idx)
         
     def hit(self, player, hand_idx):
+        # method for hitting
+        # after a dealt card, points and best option is shown
+        # check for bust
+        # if player is still in the game, he/she gets to choose another move
 
         player.hands[hand_idx].add_card(self.deck.deal_a_card(1, player.player_type))
 
@@ -342,6 +408,9 @@ class Game(object):
             
         
     def split(self, player, hand_idx):
+        # if a player splits a hand, split method goes in each hand individualy
+        # if deals another card, shows points and best value of a hand, 
+        # calls for a choose_move method (that checks for BlackJack and so forth)
 
         for number, hand in enumerate(player.hands):
             if number >= hand_idx:
@@ -350,10 +419,15 @@ class Game(object):
                 self.choose_move(player, number)
         
     def stand(self):
+        # it does not do anything =)
+
         pass
 
     def doubledown(self, player, hand_idx):
-        # checking if there is enough money - took care of in choose_move
+        # the initial bet is doubled
+        # one card is dealt
+        # player is not in game any more (can not make any more moves)
+        # checking if there is enough money - taken care of in choose_move
         player.try_bet(player.hands[hand_idx].bet_amount)
         player.hands[hand_idx].bet_amount += player.hands[hand_idx].bet_amount
         player.hands[hand_idx].add_card(self.deck.deal_a_card(1, player.player_type))
@@ -361,7 +435,7 @@ class Game(object):
         self.show_of_cards_points(player, hand_idx)
         
     def best_option(self, player, hand_idx):
-        # najboljša opcija je tista, ki je najbližje oz. enaka vsoti 21 (oziroma ciljni vsoti)
+        # best option is the one that is closest to aim of the game (21)
         aim = self.aim_of_the_game
         best = 0
 
@@ -376,6 +450,7 @@ class Game(object):
             return best
 
     def show_of_cards_points(self, player, hand_idx):
+        # method for printing out hands, points and best options
         
         if player.player_type == 'P':
             title = 'You have'
@@ -393,7 +468,8 @@ class Game(object):
                 self.best_option(player,hand_idx)))
 
     def check_players_hand_still_in_game(self, player, hand_idx):
-        # if player exceedes aim of the game, or reaches it, there are no more moves for him/her
+        # if player exceedes aim of the game, or reaches it, 
+        # there are no more moves for him/her. He/she is not in game any more
 
         a = self.best_option(player, hand_idx)
         if a == 0:
@@ -404,6 +480,10 @@ class Game(object):
             player.hands[hand_idx].in_game = False
 
     def blackJack(self, player, hand_idx):
+        # check if Black Jack method:
+        # One can get BlackJack if best option on first two cards is
+        # aim of the game (21)
+
         if self.best_option(player, hand_idx) == self.aim_of_the_game:
             print('WOOP WOOP, %s got BLACK JACK! \n' % player.name)
             player.hands[hand_idx].isBlackJack = True
@@ -411,6 +491,12 @@ class Game(object):
 
 
     def who_wins(self):
+        # method for figuring out who won and who lost:
+        # A player may win by having any final score equal to or less than 21 if the House busts
+        # House loses by busting or having a lesser hand than the player who has not busted. 
+        # If the Player and House have the same total, it is a "push", and the player does not win 
+        # or lose money on that hand. If the Player and House busts, House wins
+
         print('################################################\n')
         print('WHO WON and WHO LOST \n')
         print('################################################\n')
@@ -450,12 +536,17 @@ class Game(object):
 
 
     def refill_shoe(self):
+        # after a played game, cards are returned back to a deck (shoe)
+
         for player in self.players:
             for i, hand in enumerate(player.hands):
                 for card in player.hands[i].cards:
                     self.deck.insert_a_card(card)
 
     def is_player_in_game(self):
+        # player is in game if he/she has more than 0 cash
+        # if not, player gets deleted from players list
+
         for i, player in enumerate(self.players):
             if player.cash == 0 and player.player_type == 'P':
                 print('Sorry, %s, you lost all your money. You can\'t play anymore.' % player.name)
