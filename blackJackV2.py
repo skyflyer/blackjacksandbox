@@ -212,8 +212,6 @@ class Game(object):
                 self.deck.number_of_cards = len(self.deck.deck)
                 self.deck.shuffle()
 
-            print('Game number: ', self.game_number )
-
             self.num_of_players = len(self.players)
 
             self.call_for_players()
@@ -421,7 +419,7 @@ class Game(object):
             for m in available_moves: 
                 print(m)
 
-            move = input('%s, what is your move?: ' %(player.name)).upper()
+            move = input('%s, what is your move?: ' % (player.name)).upper()
 
             while move not in am:
                 print('This is not a valid move. Please choose one of the available moves: \n')
