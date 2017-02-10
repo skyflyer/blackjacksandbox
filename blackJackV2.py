@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import random
+import time
 
 '''
 Blackjack is a comparing card game between a player and dealer (House), meaning players compete 
@@ -70,8 +71,7 @@ class Hand(object):
 
 class Player(object):
     # player  has a name, type (P - player, H - house) and a money (cash)
-    # player can have one or more hands (if he/she splits a hand can have more hands)    
-    #  
+    # player can have one or more hands (if he/she splits a hand can have more hands)      
 
     def __init__(self, player_type, name, cash):
         self.player_type = player_type
@@ -125,10 +125,8 @@ class Deck(object):
     # deck is a one or more packs of cards
 
     def __init__(self, num_of_packs, cards):
-        self.cards = cards
         self.num_of_packs = num_of_packs
         self.deck = self.num_of_packs * cards.pack
-        self.card = Classic_cards()
         self.number_of_cards = len(self.deck)
 
     def shuffle(self):
@@ -176,44 +174,19 @@ class Game(object):
     # Player can play with 1 unit of money minimum.
     # Aim of the game can be set (aim_of_the_game). It's set to 21
     # players are listed in a list od players. House is the last player of a list
-    # dack gets initialised
-
+    # deck gets initialised
 
     def __init__(self):
-        
-        print('Welcome to the game of BLACKJACK!\n')
-        self.num_of_players = int(input('How many players are there eager to play: ?\n'))
-        packs = int(input('How many packs of cards do you want to use?: \n'))
         
         self.players = []
         self.aim_of_the_game = 21
         self.mode_of_the_game = True
+        self.num_of_players = 0
+        self.packs = 1
+        self.deck = Deck(self.packs, Classic_cards())
+        self.game_number = 1
 
-        for i in range(self.num_of_players):
-
-            name = input('What is your name, player%s?\n' % (i + 1)) 
-            while len(name) < 1:
-                name = ('For name, please input something at least 1 char long:\n')
-            
-            while True:
-                try:
-                    cash = int(input('With how much money do you want to play?'))
-                except:
-                    print('There is something wrong. Are you sure you inserted a number? Try again:')
-                    continue
-                else:
-                    if cash <= 0:
-                        print('That\'s not valid amount. It has to be greater than 0.')
-                        continue
-                    else:
-                        break
-
-            self.players.append(Player('P', name, cash))
-          
-        # Append player 'HOUSE'
-        self.players.append(Player('H', 'HOUSE', 0))  
-
-        self.deck = Deck(packs, Classic_cards())
+        print('Welcome to the game of BLACKJACK!\n')
 
     def game_on(self):
     # method for flow of the game
@@ -232,11 +205,21 @@ class Game(object):
         # reshuflle trigger
         trigger = (self.num_of_players + 1) * 5
 
+
         while self.mode_of_the_game == True: 
             if self.deck.number_of_cards < trigger:
                 print('Time to reshuffle!\n')
                 self.deck.number_of_cards = len(self.deck.deck)
                 self.deck.shuffle()
+
+            print('Game number: ', self.game_number )
+
+            self.num_of_players = len(self.players)
+
+            self.call_for_players()
+            if self.mode_of_the_game == False: 
+                print('Thank you for playing. Good bye!')
+                break
 
             self.bets(0)
 
@@ -254,25 +237,83 @@ class Game(object):
 
             print('\nGAME OVER!\n')
 
+            self.game_number += 1
+
             if len(self.players) > 1:
-                a = input('Do you want another go? (Y - yes, N - no) \n').upper()
-                if a not in ['Y', 'N']:
-                    input('That is not a valid input. Please choose Y for yes or N for no. \n')
-                elif a == 'Y':
+                a = self.check_y_n_answer('Do you want another go? (Y - yes, N - no) \n')
+                if a == 'Y':
                     self.mode_of_the_game = True
                     for player in self.players:
                         player.restart_game()
                 else:
                     self.mode_of_the_game = False
-            else:
-                self.mode_of_the_game = False
 
+    def call_for_players(self):
+
+        if self.game_number == 1:
+            add_players = True
+            self.num_of_players = self.check_number_input('How many players are there eager to play? \n')
+            n = self.num_of_players
+            self.packs = self.check_number_input('How many packs of cards do you want to use? \n')
+            prep = '' # for print out of 'player call'
+        else:
+            # remove House - will add it after all players are inserted. 
+            # House is last player in list
+            a = self.check_y_n_answer('Are there any new players: \n')
+            if a == 'Y':
+                n = self.check_number_input('How many: \n')
+                prep = 'new ' # for print out of 'player call'
+                add_players = True
+                self.players.pop()
+            else: # no new players 
+                add_players = False
+                # if only house is in list of players it's game over
+                if len(self.players) == 1:
+                    self.mode_of_the_game = False        
+
+        if self.mode_of_the_game is True and add_players is True:
+            for i in range(n):
+                # 'player call'
+                name = input('What is your name, %splayer%s? \n' % (prep, (i + 1)))
+                while len(name) < 1:
+                    name = ('For name, please input something at least 1 char long:\n')
+                
+                cash = self.check_number_input('With how much money do you want to play? \n')
+
+                self.players.append(Player('P', name, cash))
+          
+            # Append player 'HOUSE'
+            self.players.append(Player('H', 'HOUSE', 0))  
+            self.num_of_players = len(self.players)
+
+    def check_number_input(self, input_text):
+       
+        while True:
+            try:
+                a = int(input(input_text))
+            except:
+                print('There is something wrong. Are you sure you inserted a number? Try again:')
+                continue
+            else:
+                if a <= 0:
+                    print('That\'s not valid amount. It has to be greater than 0.')
+                    continue
+                else:
+                    return a
+    
+    def check_y_n_answer(self, text):
+        # testing validity of Y/N answer
+        
+        a = input(text).upper()
+        while a not in ('Y', 'N'):
+            a = input('That is not a valid answer. Please choose Y for yes or N for no: ').upper()
+        
+        return a
 
     def initial_deal(self):
         # first deal of cards to all players
 
         for i in range(len(self.players) * 2): 
-            print('%s-ta karta' % i)
             self.players[(i) % len(self.players)].hands[0].add_card(self.deck.deal_a_card(0, ''))
 
             
@@ -288,7 +329,8 @@ class Game(object):
                 print('%s, your turn: \n' % player.name)
                 self.show_of_cards_points(player, 0)
                 self.choose_move(player, 0)
-                print('################################################\n')
+                print('\n################################################\n')
+                time.sleep(3)
     
     def first_show_of_cards(self):
         # for players we show all cards, for house only one    
@@ -307,16 +349,21 @@ class Game(object):
         # if not, hits till 17
 
         print('HOUSE\'S TURN\n')
+        # house is the last player in list of players
+        house = self.players[len(self.players) - 1]
+        house_hand = house.hands[0]
 
-        self.show_of_cards_points(self.players[self.num_of_players], 0)
+        self.show_of_cards_points(house, 0)
         # check if is BlackJack
-        self.blackJack(self.players[self.num_of_players], 0)
+        self.blackJack(house, 0)
         
-        if self.players[self.num_of_players].hands[0].isBlackJack is False:
-            a = self.best_option(self.players[self.num_of_players], 0)
+        if house_hand.isBlackJack is False:
+            a = self.best_option(house, 0)
             while a < 17 and a > 0:
-                self.hit(self.players[self.num_of_players], 0)
-                a = self.best_option(self.players[self.num_of_players], 0)
+                self.hit(house, 0)
+                a = self.best_option(house, 0)
+
+        time.sleep(3)
 
         self.who_wins()
 
@@ -351,19 +398,21 @@ class Game(object):
         # each time, only available moves gets printed out and only available moves are alowed to
         # enter
 
-        if len(player.hands[hand_idx].cards) == 2 and player.hands[hand_idx].isBlackJack == True:
+        player_hand = player.hands[hand_idx]
+
+        if len(player_hand.cards) == 2 and player_hand.isBlackJack == True:
             pass
         else: 
             available_moves = ['H - hit \n', 'S - stand \n']
             am = ['H', 'S']
             
             # try to list only available moves 
-            if len(player.hands[hand_idx].cards) == 2 and \
-                player.cash - player.hands[hand_idx].bet_amount > 0:
+            if len(player_hand.cards) == 2 and \
+                player.cash - player_hand.bet_amount >= 0:
                 available_moves.append('D - double down \n')
                 am.append('D')
                 # condition for split
-                if player.hands[hand_idx].cards[0][0] == player.hands[hand_idx].cards[1][0]:
+                if player_hand.cards[0][0] == player_hand.cards[1][0]:
                     available_moves.append('P - split \n')
                     am.append('P')
                 
@@ -372,7 +421,7 @@ class Game(object):
             for m in available_moves: 
                 print(m)
 
-            move = input('%s, what is your move?:' %(player.name)).upper()
+            move = input('%s, what is your move?: ' %(player.name)).upper()
 
             while move not in am:
                 print('This is not a valid move. Please choose one of the available moves: \n')
@@ -397,13 +446,15 @@ class Game(object):
         # check for bust
         # if player is still in the game, he/she gets to choose another move
 
-        player.hands[hand_idx].add_card(self.deck.deal_a_card(1, player.player_type))
+        player_hand = player.hands[hand_idx]
+
+        player_hand.add_card(self.deck.deal_a_card(1, player.player_type))
 
         self.show_of_cards_points(player, hand_idx)
 
         self.check_players_hand_still_in_game(player, hand_idx)
         
-        if player.player_type == 'P' and player.hands[hand_idx].in_game is True:
+        if player.player_type == 'P' and player_hand.in_game is True:
                 self.choose_move(player, hand_idx)
             
         
@@ -420,7 +471,6 @@ class Game(object):
         
     def stand(self):
         # it does not do anything =)
-
         pass
 
     def doubledown(self, player, hand_idx):
@@ -500,40 +550,46 @@ class Game(object):
         print('################################################\n')
         print('WHO WON and WHO LOST \n')
         print('################################################\n')
-        # 
 
-        house_points = self.best_option(self.players[self.num_of_players], 0)
+        # house is the last player in the list of players
+        house = self.players[len(self.players) - 1]
+        house_hand = house.hands[0]
+        house_points = self.best_option(house, 0)
 
         for player in self.players:
             if player.player_type == 'P':
                 for i, hand in enumerate(player.hands):
                     player_hand_points = self.best_option(player, i) 
+                    player_hand = player.hands[i]
                     print('-------------------------------------------\n')
                     print(player.name.upper())
                     print('House has %s, you have %s \n' % (house_points, player_hand_points))
 
-                    if player_hand_points > house_points:
-                        player.gain_loose(player.hands[i].bet_amount, 2)
-                        print('Great, you won %s. Now you have %s' % (player.hands[i].bet_amount * 2, player.cash))
+                    if player_hand.isBlackJack is True and house_hand.isBlackJack is False:
+                        player.gain_loose(player_hand.bet_amount, 2.5)
+                        print('He hej! You\'ve got BlackJack! You won %s. Now you have %s' 
+                            % (player_hand.bet_amount * 2.5, player.cash))
+                        house.gain_loose(player_hand.bet_amount, -1.5) 
+                    elif player_hand_points > house_points:
+                        player.gain_loose(player_hand.bet_amount, 2)
+                        print('Great, you won %s. Now you have %s' 
+                            % (player_hand.bet_amount * 2, player.cash))
                         # House cash:
-                        self.players[self.num_of_players].gain_loose(player.hands[i].bet_amount, -1)
-                    elif (player_hand_points == house_points and house_points != 0 and player.hands[i].isBlackJack is False) or \
-                        player.hands[i].isBlackJack is True and self.players[self.num_of_players].isBlackJack is True: #PUSH
-                        player.gain_loose(player.hands[i].bet_amount, 1)
+                        house.gain_loose(player_hand.bet_amount, -1)
+                    # PUSH - equal points or both blackJack
+                    elif (house_hand.isBlackJack is True and player_hand.isBlackJack is True) or \
+                        (house_points == player_hand_points and house_points > 0 and house_hand.isBlackJack is False):  
+                        player.gain_loose(player_hand.bet_amount, 1)
                         print('It\'s a Push! You didn\'t loose any money! You have ', player.cash)
-                    elif player.hands[i].isBlackJack == True and player[self.num_of_players].hands[0].isBlackJack == False:
-                        print('He hej! You\'ve got BlackJack! you won %s. Now you have %s' % (player.hands[i].bet_amount * 2.5, player.cash))
-                        player.gain_loose(player.hands[i].bet_amount, 2.5)
-                        self.players[self.num_of_players].gain_loose(player.hands[i].bet_amount, -1.5)
-                    elif (player_hand_points < house_points) or (player_hand_points == 0 and house_points == 0):
+                    elif (house_points == 0 and player_hand_points == 0) or (house_points > player_hand_points):
                         print('Too bad! You lost. Now you have %s' % (player.cash))
-                        self.players[self.num_of_players].gain_loose(player.hands[i].bet_amount, 1)
-                    elif player_hand_points > self.aim_of_the_game:
-                        print('Sorry, you lost! Now you have %s' % (player.cash))
-                        self.players[self.num_of_players].gain_loose(player.hands[i].bet_amount, 1)
-
-        print('\nHouse has: ', self.players[self.num_of_players].cash)
-
+                        house.gain_loose(player_hand.bet_amount, 1)
+                    else: 
+                        print('O ou, weird situation!')
+                    print('-------------------------------------------\n')
+                    time.sleep(2)
+            else:
+                print('\nHouse has: %s cash' % house.cash)
 
     def refill_shoe(self):
         # after a played game, cards are returned back to a deck (shoe)
@@ -547,12 +603,15 @@ class Game(object):
         # player is in game if he/she has more than 0 cash
         # if not, player gets deleted from players list
 
-        for i, player in enumerate(self.players):
-            if player.cash == 0 and player.player_type == 'P':
-                print('Sorry, %s, you lost all your money. You can\'t play anymore.' % player.name)
+        i = 0
+        while True:
+            if self.players[i].cash == 0 and self.players[i].player_type == 'P':
+                print('Sorry, %s, you lost all your money. You can\'t play anymore.\n' % self.players[i].name)
                 self.players.pop(i)
                 self.num_of_players = len(self.players) - 1
-
-
+                i -= 1
+            i += 1
+            if i > len(self.players) - 1: 
+                break
 
 g = Game().game_on()
